@@ -6,7 +6,7 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 
-# 1. 模型架构定义
+# 1. 定义模型架构
 class SimpleEEGNet(nn.Module):
     def __init__(self, num_classes=3, channels=64, samples=320):
         super(SimpleEEGNet, self).__init__()
@@ -26,10 +26,11 @@ class SimpleEEGNet(nn.Module):
         x = self.dropout(x)
         return self.fc(x)
 
-# 2. 页面配置与跨平台路径处理
+# 2. 基础配置与路径初始化
 st.set_page_config(page_title="BCI Medical Terminal", layout="wide")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# 3. 侧边栏：授权与动态样本加载
 with st.sidebar:
     st.header("🔒 系统授权")
     password = st.text_input("输入访问代码", type="password")
@@ -41,17 +42,18 @@ with st.sidebar:
     st.markdown("---")
     st.subheader("💡 演示模式")
     
-    # 使用 os.path.join 兼容 Mac, Linux(Streamlit Cloud) 和 Windows
-    # 修正了 test_Rest_00.fif 的文件名顺序
-    samples = {
-        "停止指令": os.path.join(BASE_DIR, "data", "test_samples", "test_Rest_00.fif"),
-        "左转指令": os.path.join(BASE_DIR, "data", "test_samples", "test_Left_03.fif"),
-        "右转指令": os.path.join(BASE_DIR, "data", "test_samples", "test_Right_00.fif")
-    }
-    
+    # 自动检索 data/test_samples 文件夹下的所有 .fif 文件
+    sample_dir = os.path.join(BASE_DIR, "data", "test_samples")
+    if os.path.exists(sample_dir):
+        available_files = [f for f in os.listdir(sample_dir) if f.endswith('.fif')]
+        samples = {f: os.path.join(sample_dir, f) for f in sorted(available_files)}
+    else:
+        samples = {}
+        st.error("未找到 data/test_samples 目录，请检查 GitHub 仓库")
+
     sample_choice = st.selectbox("选择内置样本", ["无"] + list(samples.keys()))
 
-# 3. 模型加载逻辑
+# 4. 模型加载函数
 @st.cache_resource
 def load_model():
     model = SimpleEEGNet()
@@ -64,7 +66,7 @@ def load_model():
 
 model = load_model()
 
-# 4. 主界面布局
+# 5. 主界面
 st.title("🧠 脑机接口医疗辅助控制终端")
 st.info("当前 AI 识别准确率：82.33% | 信号窗口：2.0 秒")
 
@@ -81,18 +83,19 @@ elif sample_choice != "无":
 
 if data_source:
     try:
+        # 数据读取与预处理
         epochs = mne.read_epochs(data_source, preload=True, verbose=False)
         epochs.resample(160, verbose=False)
         epochs.filter(8., 30., verbose=False)
         raw_data = epochs.get_data()
 
-        # 数据长度裁剪与对齐
+        # 对齐数据长度为 320 个采样点
         if raw_data.shape[2] < 320:
             raw_data = np.pad(raw_data, ((0, 0), (0, 0), (0, 320 - raw_data.shape[2])))
         else:
             raw_data = raw_data[:, :, :320]
 
-        # Z-score 标准化公式：$z = \frac{x - \mu}{\sigma}$
+        # Z-score 标准化：$z = \frac{x - \mu}{\sigma}$
         norm_data = (raw_data - np.mean(raw_data)) / (np.std(raw_data) + 1e-8)
 
         col1, col2 = st.columns([2, 1])
@@ -133,7 +136,7 @@ if data_source:
                 """, unsafe_allow_html=True)
                 
                 st.progress(res_conf / 100)
-                st.write(f"**模型置信度：** {res_conf:.2f}%")
+                st.write(f"**预测置信度：** {res_conf:.2f}%")
 
     except Exception as e:
         st.error(f"处理失败：{e}")
