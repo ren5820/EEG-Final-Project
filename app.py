@@ -45,7 +45,7 @@ with st.sidebar:
 
     # 样例数据路径
     samples = {
-        "停止指令": "data/test_samples/test_00_Rest.fif",
+        "停止指令": "data/test_samples/test_Rest_00.fif",
         "左转指令": "data/test_samples/test_Left_03.fif",
         "右转指令": "data/test_samples/test_Right_00.fif"
     }
