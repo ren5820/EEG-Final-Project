@@ -45,9 +45,9 @@ with st.sidebar:
 
     # 样例数据路径
     samples = {
-        "停止指令": "data/test_00_Rest.fif",
-        "左转指令": "data/test_Left_03.fif",
-        "右转指令": "data/test_Right_00.fif"
+        "停止指令": "data/test_samples/test_00_Rest.fif",
+        "左转指令": "data/test_samples/test_Left_03.fif",
+        "右转指令": "data/test_samples/test_Right_00.fif"
     }
 
     sample_choice = st.selectbox("选择内置样本", ["无"] + list(samples.keys()))
